@@ -1,0 +1,57 @@
+{
+  "start_time": "2025-12-28T16:11:53.453678",
+  "config": {
+    "input_shape": [
+      224,
+      224,
+      3
+    ],
+    "num_classes": 3,
+    "batch_size": 32,
+    "epochs": 50,
+    "learning_rate": 0.0001,
+    "dropout_rate": 0.5
+  },
+  "experiments": [
+    {
+      "name": "optimal_mobilenet_transfer",
+      "timestamp": "2025-12-28T16:14:28.500073",
+      "params": {
+        "name": "optimal_mobilenet_transfer",
+        "model_type": "mobilenet",
+        "use_transfer": true,
+        "optimizer": "adam"
+      },
+      "results": {
+        "training_time": 149.0783336162567,
+        "final_epoch": 12,
+        "final_loss": 0.8643731474876404,
+        "final_accuracy": 0.4663366377353668,
+        "final_val_loss": 0.9293250441551208,
+        "final_val_accuracy": 0.5952380895614624,
+        "best_val_accuracy": 0.670634925365448,
+        "best_val_loss": 0.8229864239692688
+      }
+    },
+    {
+      "name": "cnn_v1_baseline",
+      "timestamp": "2025-12-28T16:30:02.136957",
+      "params": {
+        "name": "cnn_v1_baseline",
+        "model_type": "cnn_v1",
+        "use_transfer": false,
+        "optimizer": "adam"
+      },
+      "results": {
+        "training_time": 927.004237651825,
+        "final_epoch": 14,
+        "final_loss": 1.6132416725158691,
+        "final_accuracy": 0.31683167815208435,
+        "final_val_loss": 1.2303690910339355,
+        "final_val_accuracy": 0.01984127052128315,
+        "best_val_accuracy": 0.7301587462425232,
+        "best_val_loss": 0.6949182152748108
+      }
+    }
+  ]
+}
