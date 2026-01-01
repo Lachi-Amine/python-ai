@@ -7,7 +7,7 @@ from pathlib import Path
 
 # Project paths
 BASE_DIR = Path(__file__).parent
-MODEL_PATH = BASE_DIR / "models" / "best_model.h5"
+MODEL_PATH = BASE_DIR.parent / "final model" / "best_model.h5"
 
 # Camera settings
 CAMERA_ID = 0

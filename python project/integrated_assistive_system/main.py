@@ -10,13 +10,12 @@ import cv2
 import numpy as np
 
 from PyQt5.QtWidgets import QApplication
-from gui import AssistiveGUI
-from camera import CameraCapture
-from path_detector import PathDetector
-from zone_detector import ZoneDetector
-from navigation import NavigationAssistant
-from voice_guide import VoiceGuide
-from real_object_detector import RealObjectDetector
+from utils.gui import AssistiveGUI
+from utils.camera import CameraCapture
+from core.path_detector import PathDetector
+from core.zone_detector import ZoneDetector
+from core.navigation import NavigationAssistant
+from utils.voice_guide import VoiceGuide
 from config import (VOICE_MESSAGES, SAFETY_COLORS, PROCESSING_FPS, INSTRUCTION_DELAY,
                    VOICE_ENABLED, VOICE_RATE, VOICE_VOLUME)
 
@@ -34,7 +33,6 @@ class IntegratedAssistiveSystem:
         self.zone_detector = ZoneDetector()
         self.navigation = NavigationAssistant()
         self.voice_guide = VoiceGuide()
-        self.object_detector = RealObjectDetector()
         
         # System state
         self.running = False

@@ -13,7 +13,7 @@ from PyQt5.QtGui import QFont, QPixmap, QIcon
 
 # Import the two main applications
 from main import IntegratedAssistiveSystem
-from video_gui import VideoAnalysisGUI
+from video.video_gui import VideoAnalysisGUI
 
 class LauncherWindow(QMainWindow):
     def __init__(self):
