@@ -202,3 +202,56 @@ class NavigationAssistant:
                 closest_center['area'] > 20000):
                 return True
         return False
+    
+    def generate_directional_instruction(self, path_status, zone_analysis):
+        """Generate directional navigation instruction based on path status and zone analysis"""
+        instruction = ""
+        
+        # Generate instruction based on path status and zone analysis
+        if path_status == "Clear":
+            instruction = "Go straight"
+            
+        elif path_status == "Left Blocked":
+            # Direct instruction for left blocked
+            instruction = "Go right"
+            
+        elif path_status == "Right Blocked":
+            # Direct instruction for right blocked
+            instruction = "Go left"
+            
+        elif path_status == "Partially Blocked":
+            # Fallback for backward compatibility - use zone analysis
+            left_blocked = zone_analysis.get('left', {}).get('blocked', False)
+            center_blocked = zone_analysis.get('center', {}).get('blocked', False)
+            right_blocked = zone_analysis.get('right', {}).get('blocked', False)
+            
+            if center_blocked:
+                if left_blocked and not right_blocked:
+                    instruction = "Go right"
+                elif right_blocked and not left_blocked:
+                    instruction = "Go left"
+                elif left_blocked and right_blocked:
+                    instruction = "Stop and find another way"
+                else:
+                    instruction = "Proceed with caution"
+            else:
+                if left_blocked and right_blocked:
+                    instruction = "Stop and find another way"
+                elif left_blocked:
+                    instruction = "Go right"
+                elif right_blocked:
+                    instruction = "Go left"
+                else:
+                    instruction = "Go straight"
+                    
+        else:  # Fully Blocked
+            instruction = "Stop and turn around"
+        
+        # Update instruction history and timing (only if instruction is different)
+        if instruction != self.current_instruction:
+            current_time = time.time()
+            self.instruction_history.append(instruction)
+            self.current_instruction = instruction
+            self.last_instruction_time = current_time
+        
+        return instruction

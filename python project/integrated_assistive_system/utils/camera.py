@@ -28,6 +28,15 @@ class CameraCapture:
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
             self.cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
             
+            # Warm-up camera - capture and discard first few frames
+            print("Warming up camera...")
+            for i in range(3):
+                ret, frame = self.cap.read()
+                if not ret:
+                    print(f"Warning: Failed to capture warm-up frame {i+1}")
+                else:
+                    print(f"Warm-up frame {i+1} captured successfully")
+            
             self.is_running = True
             self.start_time = cv2.getTickCount()
             print(f"Camera {self.camera_id} initialized successfully")
@@ -43,14 +52,20 @@ class CameraCapture:
             return None
         
         try:
-            ret, frame = self.cap.read()
-            if ret:
-                self.frame = frame
-                self.frame_count += 1
-                return frame
-            else:
-                print("Failed to capture frame")
-                return None
+            # Try to capture frame with retries
+            for attempt in range(3):
+                ret, frame = self.cap.read()
+                if ret:
+                    self.frame = frame
+                    self.frame_count += 1
+                    return frame
+                else:
+                    print(f"Frame capture attempt {attempt + 1} failed, retrying...")
+                    # Small delay between retries
+                    cv2.waitKey(50)
+            
+            print("Failed to capture frame after 3 attempts")
+            return None
                 
         except Exception as e:
             print(f"Frame capture error: {e}")

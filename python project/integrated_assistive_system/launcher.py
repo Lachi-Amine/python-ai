@@ -1,195 +1,214 @@
 """
-Integrated Assistive System Launcher
-Choose between live camera mode and video analysis mode
+Simple Launcher for Assistive Navigation System
+Clean, simple buttons with guaranteed text visibility
 """
 
 import sys
 import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                            QHBoxLayout, QLabel, QPushButton, QFrame, QGroupBox,
-                            QMessageBox, QSizePolicy)
+                            QHBoxLayout, QLabel, QPushButton, QGroupBox,
+                            QMessageBox)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QPixmap, QIcon
+from PyQt5.QtGui import QFont
 
 # Import the two main applications
 from main import IntegratedAssistiveSystem
 from video.video_gui import VideoAnalysisGUI
 
-class LauncherWindow(QMainWindow):
+class SimpleLauncher(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Assistive Navigation System - Launcher")
-        self.setGeometry(300, 200, 500, 400)
-        self.setFixedSize(500, 400)
+        self.setWindowTitle("Navigation System Launcher")
+        self.setGeometry(400, 300, 600, 450)
+        self.setFixedSize(600, 450)
         
         self.init_ui()
         
     def init_ui(self):
-        """Initialize the launcher interface"""
+        """Initialize simple launcher interface"""
         # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
         # Main layout
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(20)
+        main_layout.setContentsMargins(40, 40, 40, 40)
         
         # Title
-        title_label = QLabel("Assistive Navigation System")
-        title_label.setAlignment(Qt.AlignCenter)
-        title_font = QFont("Arial", 18, QFont.Bold)
-        title_label.setFont(title_font)
-        main_layout.addWidget(title_label)
+        title = QLabel("Assistive Navigation System")
+        title.setAlignment(Qt.AlignCenter)
+        title_font = QFont()
+        title_font.setPointSize(20)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        main_layout.addWidget(title)
         
         # Subtitle
-        subtitle_label = QLabel("Choose your analysis mode:")
-        subtitle_label.setAlignment(Qt.AlignCenter)
-        subtitle_font = QFont("Arial", 12)
-        subtitle_label.setFont(subtitle_font)
-        main_layout.addWidget(subtitle_label)
+        subtitle = QLabel("Select Mode:")
+        subtitle.setAlignment(Qt.AlignCenter)
+        subtitle_font = QFont()
+        subtitle_font.setPointSize(14)
+        subtitle.setFont(subtitle_font)
+        main_layout.addWidget(subtitle)
         
-        # Mode selection buttons
-        modes_group = QGroupBox("Select Mode")
-        modes_layout = QVBoxLayout(modes_group)
-        modes_layout.setSpacing(15)
+        # Button container
+        button_container = QWidget()
+        button_layout = QVBoxLayout(button_container)
+        button_layout.setSpacing(15)
         
-        # Live Camera Mode
-        camera_btn = QPushButton("📷 Live Camera Mode")
-        camera_btn.setMinimumHeight(80)
+        # Live Camera Button
+        camera_btn = QPushButton("Live Camera Mode")
+        camera_btn.setMinimumHeight(60)
+        
+        # Simple, clean styling
         camera_btn.setStyleSheet("""
             QPushButton {
-                font-size: 14px;
-                font-weight: bold;
                 background-color: #4CAF50;
                 color: white;
                 border: none;
-                border-radius: 8px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
                 padding: 10px;
             }
             QPushButton:hover {
                 background-color: #45a049;
             }
+            QPushButton:pressed {
+                background-color: #3d8b40;
+            }
         """)
-        camera_btn.clicked.connect(self.launch_camera_mode)
-        modes_layout.addWidget(camera_btn)
         
-        camera_desc = QLabel("Real-time camera analysis with live navigation guidance")
+        camera_btn.clicked.connect(self.launch_camera)
+        button_layout.addWidget(camera_btn)
+        
+        # Camera description
+        camera_desc = QLabel("Real-time camera navigation assistance")
         camera_desc.setAlignment(Qt.AlignCenter)
-        camera_desc.setStyleSheet("color: #666; font-size: 11px; margin-bottom: 10px;")
-        modes_layout.addWidget(camera_desc)
+        camera_desc.setStyleSheet("color: #666; font-size: 12px; margin: 5px;")
+        button_layout.addWidget(camera_desc)
         
-        # Video Analysis Mode
-        video_btn = QPushButton("🎬 Video Analysis Mode")
-        video_btn.setMinimumHeight(80)
+        # Video Analysis Button
+        video_btn = QPushButton("Video Analysis Mode")
+        video_btn.setMinimumHeight(60)
+        
         video_btn.setStyleSheet("""
             QPushButton {
-                font-size: 14px;
-                font-weight: bold;
                 background-color: #2196F3;
                 color: white;
                 border: none;
-                border-radius: 8px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
                 padding: 10px;
             }
             QPushButton:hover {
                 background-color: #1976D2;
             }
+            QPushButton:pressed {
+                background-color: #1565C0;
+            }
         """)
-        video_btn.clicked.connect(self.launch_video_mode)
-        modes_layout.addWidget(video_btn)
         
-        video_desc = QLabel("Analyze video files with detailed path detection and export options")
+        video_btn.clicked.connect(self.launch_video)
+        button_layout.addWidget(video_btn)
+        
+        # Video description
+        video_desc = QLabel("Analyze video files for path detection")
         video_desc.setAlignment(Qt.AlignCenter)
-        video_desc.setStyleSheet("color: #666; font-size: 11px;")
-        modes_layout.addWidget(video_desc)
+        video_desc.setStyleSheet("color: #666; font-size: 12px; margin: 5px;")
+        button_layout.addWidget(video_desc)
         
-        main_layout.addWidget(modes_group)
+        main_layout.addWidget(button_container)
         
-        # Info section
-        info_group = QGroupBox("System Information")
-        info_layout = QVBoxLayout(info_group)
-        
-        info_text = QLabel("""Features:
-• MobileNetV2 path detection
-• Directional navigation (Go Left/Right/Straight)
-• Voice guidance with safety modes
-• Real-time performance monitoring
-• Video export with analysis overlays
-• CSV export of results""")
-        info_text.setStyleSheet("font-size: 10px; color: #333;")
-        info_layout.addWidget(info_text)
-        
-        main_layout.addWidget(info_group)
+        # Add some spacing
+        main_layout.addStretch()
         
         # Exit button
         exit_btn = QPushButton("Exit")
+        exit_btn.setMaximumWidth(100)
         exit_btn.setStyleSheet("""
             QPushButton {
                 background-color: #f44336;
                 color: white;
                 border: none;
-                border-radius: 5px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: bold;
                 padding: 8px;
             }
             QPushButton:hover {
-                background-color: #d32f2f;
+                background-color: #da190b;
             }
         """)
+        
         exit_btn.clicked.connect(self.close)
-        main_layout.addWidget(exit_btn)
         
-        # Add stretch to center everything
-        main_layout.addStretch()
+        # Center exit button
+        exit_layout = QHBoxLayout()
+        exit_layout.addStretch()
+        exit_layout.addWidget(exit_btn)
+        exit_layout.addStretch()
         
-    def launch_camera_mode(self):
-        """Launch the live camera application"""
+        main_layout.addLayout(exit_layout)
+        
+    def launch_camera(self):
+        """Launch live camera mode"""
         try:
-            print("Launching Live Camera Mode...")
-            
-            # Hide launcher
+            print("Starting Live Camera Mode...")
             self.hide()
             
-            # Create and run camera application in a separate process
+            # Run camera application in separate process
             import subprocess
             import sys
             
-            # Run camera mode as separate process to avoid Qt conflicts
-            result = subprocess.run([sys.executable, "main.py"], 
-                                  cwd=os.path.dirname(os.path.abspath(__file__)))
+            try:
+                result = subprocess.run([sys.executable, "main.py"], 
+                                      cwd=os.path.dirname(os.path.abspath(__file__)),
+                                      timeout=None)  # Wait indefinitely until process finishes
+            except subprocess.TimeoutExpired:
+                print("Camera mode timed out")
+            except KeyboardInterrupt:
+                print("Camera mode interrupted")
             
-            # Show launcher again when camera app closes
+            print("Camera mode finished")
             self.show()
-                
+            
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to launch camera mode: {str(e)}")
+            print(f"Failed to start camera mode: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to start camera mode: {str(e)}")
             self.show()
     
-    def launch_video_mode(self):
-        """Launch the video analysis application"""
+    def launch_video(self):
+        """Launch video analysis mode"""
         try:
-            print("Launching Video Analysis Mode...")
-            
-            # Hide launcher
+            print("Starting Video Analysis Mode...")
             self.hide()
             
-            # Create and run video analysis application in a separate process
+            # Run video analysis in separate process
             import subprocess
             import sys
             
-            # Run video analysis as separate process to avoid Qt conflicts
-            result = subprocess.run([sys.executable, "video_app.py"], 
-                                  cwd=os.path.dirname(os.path.abspath(__file__)))
+            try:
+                result = subprocess.run([sys.executable, "video_test.py"], 
+                                      cwd=os.path.dirname(os.path.abspath(__file__)),
+                                      timeout=None)  # Wait indefinitely until process finishes
+            except subprocess.TimeoutExpired:
+                print("Video mode timed out")
+            except KeyboardInterrupt:
+                print("Video mode interrupted")
             
-            # Show launcher again when video app closes
+            print("Video mode finished")
             self.show()
-                
+            
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to launch video mode: {str(e)}")
+            print(f"Failed to start video mode: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to start video mode: {str(e)}")
             self.show()
     
     def closeEvent(self, event):
-        """Handle window closing"""
+        """Handle application exit"""
         reply = QMessageBox.question(self, 'Exit', 'Are you sure you want to exit?',
                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         
@@ -199,19 +218,13 @@ class LauncherWindow(QMainWindow):
             event.ignore()
 
 def main():
-    """Main entry point for launcher"""
     app = QApplication(sys.argv)
     
-    # Set application style
-    app.setStyle('Fusion')
-    
-    # Create and show launcher
-    launcher = LauncherWindow()
+    # Create and show simple launcher
+    launcher = SimpleLauncher()
     launcher.show()
     
-    # Run the application
-    exit_code = app.exec_()
-    sys.exit(exit_code)
+    sys.exit(app.exec_())
 
 if __name__ == "__main__":
     main()

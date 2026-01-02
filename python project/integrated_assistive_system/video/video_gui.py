@@ -14,8 +14,21 @@ import cv2
 import numpy as np
 import time
 import os
-from .video_analyzer import VideoAnalyzer
-from config import SAFETY_COLORS
+import sys
+
+# Add parent directory to path for standalone execution
+if __name__ == "__main__":
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from .video_analyzer import VideoAnalyzer
+except ImportError:
+    from video_analyzer import VideoAnalyzer
+
+try:
+    from config import SAFETY_COLORS
+except ImportError:
+    from config import SAFETY_COLORS
 
 class VideoAnalysisWorker(QThread):
     """Worker thread for video analysis"""
@@ -51,7 +64,6 @@ class VideoAnalysisGUI(QMainWindow):
         self.setGeometry(200, 200, 1000, 700)
         
         self.analyzer = VideoAnalyzer()
-        self.object_detector = RealObjectDetector()
         self.worker = None
         self.current_video_path = None
         self.is_analyzing = False
@@ -309,9 +321,13 @@ class VideoAnalysisGUI(QMainWindow):
                 frame_data = self.analyzer.analyze_frame(frame)
                 
                 if frame_data:
-                    # Draw zones and objects
+                    # Draw zones and obstacles
                     frame = self.analyzer.zone_detector.draw_zones(frame)
-                    frame = self.analyzer.object_detector.draw_objects(frame, frame_data.get('detected_objects', []))
+                    
+                    # Draw zone analysis overlay
+                    zone_analysis = frame_data.get('zone_analysis', {})
+                    if zone_analysis:
+                        frame = self.draw_zone_overlay(frame, zone_analysis)
                     
                     # Update frame details
                     detected_objects = frame_data.get('detected_objects', [])
@@ -575,3 +591,60 @@ Path Status Distribution:
         
         self.analyzer.release()
         event.accept()
+
+    def draw_zone_overlay(self, frame, zone_analysis):
+        """Draw colored zone overlays on frame"""
+        if frame is None or zone_analysis is None:
+            return frame
+        
+        height, width = frame.shape[:2]
+        
+        # Define zone colors based on blocking status
+        for zone_name, zone_info in zone_analysis.items():
+            if zone_info.get('blocked', False):
+                color = (0, 0, 255)  # Red for blocked
+            else:
+                color = (0, 255, 0)  # Green for clear
+            
+            alpha = 0.3
+            
+            # Create overlay for this zone
+            overlay = frame.copy()
+            x_start = zone_info.get('x_start', 0)
+            x_end = zone_info.get('x_end', width)
+            y_start = zone_info.get('y_start', 0)
+            y_end = zone_info.get('y_end', height)
+            
+            # Draw semi-transparent rectangle
+            cv2.rectangle(overlay, (x_start, y_start), (x_end, y_end), color, -1)
+            cv2.addWeighted(overlay[y_start:y_end, x_start:x_end], alpha, 
+                           frame[y_start:y_end, x_start:x_end], 1-alpha, 0, 
+                           frame[y_start:y_end, x_start:x_end])
+            
+            # Draw zone border
+            cv2.rectangle(frame, (x_start, y_start), (x_end, y_end), color, 2)
+            
+            # Add zone label
+            label = f"{zone_name.upper()}"
+            if zone_info.get('blocked', False):
+                label += " [BLOCKED]"
+            cv2.putText(frame, label, (x_start + 10, y_start + 30), 
+                      cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+        
+        return frame
+
+if __name__ == "__main__":
+    import sys
+    from PyQt5.QtWidgets import QApplication
+    
+    app = QApplication(sys.argv)
+    
+    # Set application style
+    app.setStyle('Fusion')
+    
+    # Create and show video analysis GUI
+    video_gui = VideoAnalysisGUI()
+    video_gui.show()
+    
+    # Run the application
+    sys.exit(app.exec_())

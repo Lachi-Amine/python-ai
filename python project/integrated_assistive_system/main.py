@@ -104,47 +104,67 @@ class IntegratedAssistiveSystem:
                         time.sleep(0.1)
                         continue
                     
-                    # Update GUI camera feed
-                    self.gui.update_camera_feed(frame)
-                    
                     # Process frame if detection is active
                     if self.gui.detection_active:
-                        # Predict path status
-                        result, predictions, status = self.path_detector.predict_path_status(frame)
-                        
-                        if result:
-                            # Update frame size for zone detector
-                            height, width = frame.shape[:2]
-                            self.zone_detector.update_frame_size(width, height)
+                        try:
+                            # Predict path status
+                            result, predictions, status = self.path_detector.predict_path_status(frame)
                             
-                            # Detect real objects in the frame
-                            detected_objects = self.object_detector.detect_objects(frame)
-                            navigation_objects = self.object_detector.filter_navigation_objects(detected_objects)
+                            if result:
+                                # Update frame size for zone detector
+                                height, width = frame.shape[:2]
+                                self.zone_detector.update_frame_size(width, height)
+                                
+                                # Analyze frame zones for obstacles
+                                try:
+                                    zone_analysis = self.zone_detector.analyze_zones(frame, result)
+                                except Exception as e:
+                                    print(f"Zone analysis error: {e}")
+                                    # Create default zone analysis
+                                    zone_analysis = {
+                                        'left': {'blocked': False, 'x_start': 0, 'x_end': 213, 'y_start': 0, 'y_end': 480},
+                                        'center': {'blocked': False, 'x_start': 213, 'x_end': 426, 'y_start': 0, 'y_end': 480},
+                                        'right': {'blocked': False, 'x_start': 426, 'x_end': 640, 'y_start': 0, 'y_end': 480}
+                                    }
+                                
+                                # Generate directional navigation instruction
+                                try:
+                                    instruction = self.navigation.generate_directional_instruction(result['status'], zone_analysis)
+                                except Exception as e:
+                                    print(f"Navigation error: {e}")
+                                    instruction = "Proceed with caution"
+                                
+                                # Update GUI displays
+                                self.gui.update_path_status(result['status'], result['confidence'])
+                                self.gui.update_instruction(instruction)
+                                
+                                # Voice guidance
+                                if self.gui.voice_active:
+                                    current_time = time.time()
+                                    if current_time - self.last_instruction_time > INSTRUCTION_DELAY:
+                                        # Check for emergency
+                                        is_emergency = (result['status'] == 'Fully Blocked' and 
+                                                      result['confidence'] > 0.7)
+                                        try:
+                                            self.voice_guide.speak(instruction, priority=is_emergency)
+                                        except Exception as e:
+                                            print(f"Voice error: {e}")
+                                        self.last_instruction_time = current_time
+                                
+                                # Draw status overlay and zone analysis on frame
+                                try:
+                                    frame = self.draw_status_overlay(frame, result)
+                                    frame = self.draw_obstacle_zones(frame, zone_analysis, result)
+                                except Exception as e:
+                                    print(f"Drawing error: {e}")
+                                    # Continue with original frame if drawing fails
                             
-                            # Categorize objects into zones
-                            objects_in_zones = self.zone_detector.categorize_objects(navigation_objects)
-                            
-                            # Generate directional navigation instruction
-                            instruction = self.navigation.generate_directional_instruction(result['status'], objects_in_zones)
-                            
-                            # Update GUI displays
-                            self.gui.update_path_status(result['status'], result['confidence'])
-                            self.gui.update_instruction(instruction)
-                            
-                            # Voice guidance
-                            if self.gui.voice_active:
-                                current_time = time.time()
-                                if current_time - self.last_instruction_time > INSTRUCTION_DELAY:
-                                    # Check for emergency
-                                    is_emergency = (result['status'] == 'Fully Blocked' and 
-                                                  result['confidence'] > 0.7) or self.navigation.is_emergency_stop(objects_in_zones)
-                                    self.voice_guide.speak(instruction, priority=is_emergency)
-                                    self.last_instruction_time = current_time
-                            
-                            # Draw status overlay, zones, and detected objects on frame
-                            frame = self.draw_status_overlay(frame, result)
-                            frame = self.zone_detector.draw_zones(frame)
-                            frame = self.object_detector.draw_objects(frame, navigation_objects)
+                        except Exception as e:
+                            print(f"Detection processing error: {e}")
+                            # Continue with camera feed even if detection fails
+                    
+                    # Update GUI camera feed (processed or raw frame)
+                    self.gui.update_camera_feed(frame)
                     
                     # Update FPS display
                     fps = self.camera.get_fps()
@@ -219,6 +239,82 @@ class IntegratedAssistiveSystem:
         probs = result['probabilities']
         prob_text = f"Clear: {probs['clear']:.2f} | Partial: {probs['partial']:.2f} | Blocked: {probs['full']:.2f}"
         cv2.putText(frame, prob_text, (10, height - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+        
+        return frame
+    
+    def draw_obstacle_zones(self, frame, zone_analysis, result):
+        """Draw colored obstacle zones on frame"""
+        if frame is None or zone_analysis is None:
+            return frame
+        
+        height, width = frame.shape[:2]
+        
+        # Define zone colors based on path status
+        if result['status'] == "Clear":
+            zone_colors = {
+                'left': (0, 255, 0),      # Green
+                'center': (0, 255, 0),    # Green  
+                'right': (0, 255, 0)       # Green
+            }
+        elif result['status'] == "Partially Blocked":
+            zone_colors = {
+                'left': (0, 255, 255),    # Yellow
+                'center': (0, 165, 255),   # Orange
+                'right': (0, 255, 255)    # Yellow
+            }
+        else:  # Fully Blocked
+            zone_colors = {
+                'left': (0, 0, 255),      # Red
+                'center': (0, 0, 255),     # Red
+                'right': (0, 0, 255)       # Red
+            }
+        
+        # Draw zone overlays
+        for zone_name, zone_info in zone_analysis.items():
+            if zone_name in zone_colors:
+                color = zone_colors[zone_name]
+                alpha = 0.3
+                
+                # Create overlay for this zone
+                overlay = frame.copy()
+                x_start = zone_info['x_start']
+                x_end = zone_info['x_end']
+                y_start = zone_info['y_start'] 
+                y_end = zone_info['y_end']
+                
+                # Draw semi-transparent rectangle
+                cv2.rectangle(overlay, (x_start, y_start), (x_end, y_end), color, -1)
+                cv2.addWeighted(overlay[y_start:y_end, x_start:x_end], alpha, 
+                               frame[y_start:y_end, x_start:x_end], 1-alpha, 0, 
+                               frame[y_start:y_end, x_start:x_end])
+                
+                # Draw zone border
+                cv2.rectangle(frame, (x_start, y_start), (x_end, y_end), color, 2)
+                
+                # Add zone label
+                label = f"{zone_name.upper()}"
+                if zone_info.get('blocked', False):
+                    label += " [BLOCKED]"
+                cv2.putText(frame, label, (x_start + 10, y_start + 30), 
+                          cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+        
+        # Add directional arrow based on instruction
+        instruction = self.navigation.generate_directional_instruction(result['status'], zone_analysis)
+        if "Go left" in instruction:
+            # Draw left arrow
+            cv2.arrowedLine(frame, (width//2, height-50), (width//4, height-50), (0, 255, 0), 5)
+        elif "Go right" in instruction:
+            # Draw right arrow  
+            cv2.arrowedLine(frame, (width//2, height-50), (3*width//4, height-50), (0, 255, 0), 5)
+        elif "Go straight" in instruction:
+            # Draw up arrow
+            cv2.arrowedLine(frame, (width//2, height-50), (width//2, height//2), (0, 255, 0), 5)
+        elif "Stop" in instruction:
+            # Draw stop sign
+            center = (width//2, height-50)
+            cv2.circle(frame, center, 30, (0, 0, 255), -1)
+            cv2.putText(frame, "STOP", (center[0]-25, center[1]+8), 
+                      cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         
         return frame
     

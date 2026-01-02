@@ -172,3 +172,66 @@ class ZoneDetector:
                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
         
         return frame_copy
+    
+    def analyze_zones(self, frame, result):
+        """Analyze zones based on path detection result"""
+        zone_analysis = self.zones.copy()
+        
+        # Determine zone status based on path result
+        if result['status'] == "Clear":
+            # All zones are clear
+            for zone in zone_analysis:
+                zone_analysis[zone]['blocked'] = False
+                zone_analysis[zone]['confidence'] = result['confidence']
+                
+        elif result['status'] == "Left Blocked":
+            # Left zone blocked, others clear
+            zone_analysis['left']['blocked'] = True
+            zone_analysis['center']['blocked'] = False
+            zone_analysis['right']['blocked'] = False
+            for zone in zone_analysis:
+                zone_analysis[zone]['confidence'] = result['confidence']
+                
+        elif result['status'] == "Right Blocked":
+            # Right zone blocked, others clear
+            zone_analysis['left']['blocked'] = False
+            zone_analysis['center']['blocked'] = False
+            zone_analysis['right']['blocked'] = True
+            for zone in zone_analysis:
+                zone_analysis[zone]['confidence'] = result['confidence']
+                
+        elif result['status'] == "Partially Blocked":
+            # Fallback for backward compatibility - use confidence to determine blocking pattern
+            confidence = result['confidence']
+            probs = result.get('probabilities', {'left_blocked': 0.3, 'right_blocked': 0.3, 'clear': 0.4, 'full': 0.0})
+            
+            # Clear all zones first
+            for zone in zone_analysis:
+                zone_analysis[zone]['blocked'] = False
+                zone_analysis[zone]['confidence'] = result['confidence']
+            
+            # Block zones based on side probabilities
+            left_prob = probs.get('left_blocked', 0.0)
+            right_prob = probs.get('right_blocked', 0.0)
+            
+            if left_prob > right_prob and left_prob > 0.3:
+                # Left more likely to be blocked
+                zone_analysis['left']['blocked'] = True
+            elif right_prob > left_prob and right_prob > 0.3:
+                # Right more likely to be blocked
+                zone_analysis['right']['blocked'] = True
+            else:
+                # Minor center obstruction
+                zone_analysis['center']['blocked'] = True
+                
+        else:  # Fully Blocked
+            # All zones blocked, especially center
+            for zone in zone_analysis:
+                zone_analysis[zone]['blocked'] = True
+                zone_analysis[zone]['confidence'] = result['confidence']
+            
+            # Center is most critical
+            zone_analysis['center']['blocked'] = True
+            zone_analysis['center']['critical'] = True
+        
+        return zone_analysis

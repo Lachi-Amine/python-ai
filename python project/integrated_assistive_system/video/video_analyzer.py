@@ -7,12 +7,27 @@ import cv2
 import numpy as np
 import time
 import os
-from pathlib import Path
-from core.path_detector import PathDetector
-from core.zone_detector import ZoneDetector
-from core.navigation import NavigationAssistant
-from utils.voice_guide import VoiceGuide
-from config import CAMERA_WIDTH, CAMERA_HEIGHT
+import sys
+
+# Add parent directory to path for standalone execution
+if __name__ == "__main__":
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from core.path_detector import PathDetector
+    from core.zone_detector import ZoneDetector
+    from core.navigation import NavigationAssistant
+    from utils.voice_guide import VoiceGuide
+except ImportError:
+    from core.path_detector import PathDetector
+    from core.zone_detector import ZoneDetector
+    from core.navigation import NavigationAssistant
+    from utils.voice_guide import VoiceGuide
+
+try:
+    from config import CAMERA_WIDTH, CAMERA_HEIGHT
+except ImportError:
+    from config import CAMERA_WIDTH, CAMERA_HEIGHT
 
 class VideoAnalyzer:
     def __init__(self):
@@ -67,42 +82,37 @@ class VideoAnalyzer:
         if frame is None:
             return None
         
-        # Update frame size for zone detector
-        height, width = frame.shape[:2]
-        self.zone_detector.update_frame_size(width, height)
-        
-        # Predict path status
-        result, predictions, status = self.detector.predict_path_status(frame)
-        
-        if result:
+        try:
             # Update frame size for zone detector
             height, width = frame.shape[:2]
             self.zone_detector.update_frame_size(width, height)
             
-            # Detect real objects in the frame
-            detected_objects = self.object_detector.detect_objects(frame)
-            navigation_objects = self.object_detector.filter_navigation_objects(detected_objects)
+            # Predict path status
+            result, predictions, status = self.detector.predict_path_status(frame)
             
-            # Categorize objects into zones
-            objects_in_zones = self.zone_detector.categorize_objects(navigation_objects)
+            if result:
+                # Analyze frame zones for obstacles
+                zone_analysis = self.zone_detector.analyze_zones(frame, result)
+                
+                # Generate directional navigation instruction
+                instruction = self.navigation.generate_directional_instruction(result['status'], zone_analysis)
+                
+                # Create frame data
+                frame_data = {
+                    'frame_number': self.current_frame,
+                    'timestamp': self.current_frame / self.fps,
+                    'path_status': result['status'],
+                    'confidence': result['confidence'],
+                    'probabilities': result['probabilities'],
+                    'instruction': instruction,
+                    'zone_analysis': zone_analysis,
+                    'zone_status': {k: v['blocked'] for k, v in zone_analysis.items()}
+                }
+                
+                return frame_data
             
-            # Generate directional navigation instruction
-            instruction = self.navigation.generate_directional_instruction(result['status'], objects_in_zones)
-            
-            # Create frame data
-            frame_data = {
-                'frame_number': self.current_frame,
-                'timestamp': self.current_frame / self.fps,
-                'path_status': result['status'],
-                'confidence': result['confidence'],
-                'probabilities': result['probabilities'],
-                'instruction': instruction,
-                'objects_in_zones': objects_in_zones,
-                'zone_status': self.zone_detector.get_zone_status(),
-                'detected_objects': navigation_objects
-            }
-            
-            return frame_data
+        except Exception as e:
+            print(f"Frame analysis error: {e}")
         
         return None
     

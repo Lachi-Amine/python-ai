@@ -7,7 +7,7 @@ from pathlib import Path
 
 # Project paths
 BASE_DIR = Path(__file__).parent
-MODEL_PATH = BASE_DIR.parent / "final model" / "best_model.h5"
+MODEL_PATH = BASE_DIR.parent / "final model" / "final.keras"  # Actually H5 format
 
 # Camera settings
 CAMERA_ID = 0
@@ -17,26 +17,29 @@ CAMERA_FPS = 30
 
 # Model settings (MobileNet from academic project)
 MODEL_INPUT_SHAPE = (224, 224, 3)
-MODEL_CLASSES = ["Clear", "Partially Blocked", "Fully Blocked"]
+MODEL_CLASSES = ["Clear", "Left Blocked", "Right Blocked", "Fully Blocked"]
 CONFIDENCE_THRESHOLD = 0.5
 
-# Safety modes (from academic project)
+# Safety modes (updated for 4-class system)
 SAFETY_MODES = {
     "conservative": {
         "full": 0.5,
-        "partial": 0.4,
+        "left_blocked": 0.4,
+        "right_blocked": 0.4,
         "clear": 0.75,
         "confidence": 0.5
     },
     "balanced": {
         "full": 0.45,
-        "partial": 0.35,
+        "left_blocked": 0.35,
+        "right_blocked": 0.35,
         "clear": 0.7,
         "confidence": 0.45
     },
     "aggressive": {
         "full": 0.35,
-        "partial": 0.3,
+        "left_blocked": 0.3,
+        "right_blocked": 0.3,
         "clear": 0.6,
         "confidence": 0.4
     }
