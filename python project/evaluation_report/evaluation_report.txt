@@ -1,0 +1,107 @@
+================================================================================
+Blind Path Detection System - Model Evaluation Report
+================================================================================
+
+1. Model Information
+--------------------------------------------------------------------------------
+Model Path: C:\Users\lenovo\Desktop\PythonCode\PythonFinalProject2\final_model.keras
+Input Shape: (224, 224, 3)
+Output Classes: ['Clear', 'Left Blocked', 'Right Blocked', 'Fully Blocked']
+
+2. Basic Performance Metrics
+--------------------------------------------------------------------------------
+Accuracy: 0.8477
+Macro Precision: 0.4905
+Macro Recall: 0.5797
+Macro F1 Score: 0.5240
+
+Clear:
+  Precision: 0.3913
+  Recall: 0.4500
+  F1 Score: 0.4186
+
+Left Blocked:
+  Precision: 0.9508
+  Recall: 0.8888
+  F1 Score: 0.9187
+
+Right Blocked:
+  Precision: 0.3698
+  Recall: 0.6174
+  F1 Score: 0.4625
+
+Fully Blocked:
+  Precision: 0.2500
+  Recall: 0.3625
+  F1 Score: 0.2959
+
+3. Confusion Matrix
+--------------------------------------------------------------------------------
+Confusion Matrix:
+Clear                [9 4 3 4]
+Left Blocked         [   8 1583  113   77]
+Right Blocked        [ 2 36 71  6]
+Fully Blocked        [ 4 42  5 29]
+
+Clear Recall: 0.4500
+Left Blocked Recall: 0.8888
+Right Blocked Recall: 0.6174
+Fully Blocked Recall: 0.3625
+
+4. ROC-AUC Metrics
+--------------------------------------------------------------------------------
+Clear: AUC = 0.9364
+Left Blocked: AUC = 0.8524
+Right Blocked: AUC = 0.8850
+Fully Blocked: AUC = 0.8487
+
+5. Error Analysis
+--------------------------------------------------------------------------------
+Error Type Statistics:
+  Clear_as_Blocked: 7 error samples
+  Partial_as_Full: 113 error samples
+  Full_as_Partial: 36 error samples
+  Clear_as_Partial: 4 error samples
+  Clear_as_Full: 3 error samples
+  Blocked_as_Clear: 10 error samples
+
+Risk Analysis:
+  High Risk Errors: 10
+  Medium Risk Errors: 149
+  Low Risk Errors: 145
+
+6. Performance Benchmark
+--------------------------------------------------------------------------------
+batch_1:
+  Average Inference Time: 43.92 ms
+  FPS: 22.77
+  Throughput: 22.77 samples/second
+
+batch_4:
+  Average Inference Time: 60.63 ms
+  FPS: 65.98
+  Throughput: 263.91 samples/second
+
+batch_8:
+  Average Inference Time: 96.63 ms
+  FPS: 82.79
+  Throughput: 662.34 samples/second
+
+batch_16:
+  Average Inference Time: 135.71 ms
+  FPS: 117.90
+  Throughput: 1886.44 samples/second
+
+batch_32:
+  Average Inference Time: 232.45 ms
+  FPS: 137.66
+  Throughput: 4405.20 samples/second
+
+7. Conclusions & Recommendations
+--------------------------------------------------------------------------------
+ Model performance needs improvement. Consider retraining or adjusting model architecture.
+
+ Found 10 high-risk errors (Blocked misclassified as Clear). Recommendations:
+  - Use conservative decision thresholds
+  - Increase training data for Blocked classes
+  - Implement multi-frame validation mechanism
